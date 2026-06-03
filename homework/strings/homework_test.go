@@ -10,35 +10,39 @@ import (
 )
 
 type COWBuffer struct {
-	data    []byte
-	refs    *int
-	refData *[]byte
-	// need to implement
+	data []byte
+	refs *int
 }
 
 func NewCOWBuffer(data []byte) COWBuffer {
-	newRefs := new(int)
-	*newRefs = 1
 	return COWBuffer{
 		data: data,
-		refs: newRefs,
+		refs: nil,
 	}
 }
 
 // func (b *COWBuffer) Clone() COWBuffer                  // создать новую копию буфера
 func (b *COWBuffer) Clone() COWBuffer {
-	*b.refs++
-
+	if b.refs == nil {
+		newRefs := new(int)
+		*newRefs = 2
+		b.refs = newRefs
+	} else {
+		*b.refs++
+	}
 	return COWBuffer{
 		data: b.data,
 		refs: b.refs,
-	} // need to implement
+	}
 }
 
 // func (b *COWBuffer) Close()                            // перестать использовать копию буффера
 func (b *COWBuffer) Close() {
-	if b.refs != nil && *b.refs > 0 {
+	if b.refs != nil {
 		*b.refs--
+		if *b.refs == 0 {
+			b.refs = nil
+		}
 	}
 }
 
@@ -48,12 +52,16 @@ func (b *COWBuffer) Update(index int, value byte) bool {
 		return false
 	}
 
-	if *b.refs > 1 {
+	if b.refs != nil && *b.refs > 1 {
 		*b.refs--
 		copyData := make([]byte, len(b.data))
 		copy(copyData, b.data)
-		*b = NewCOWBuffer(copyData)
+		b.data = copyData
+		newRefs := new(int)
+		*newRefs = 1
+		b.refs = newRefs
 	}
+
 	b.data[index] = value
 
 	return true
@@ -68,7 +76,7 @@ func TestCOWBuffer(t *testing.T) {
 	data := []byte{'a', 'b', 'c', 'd'}
 	buffer := NewCOWBuffer(data)
 	defer buffer.Close()
-	fmt.Printf("buffer %+v %v\n", buffer, *buffer.refs)
+	fmt.Printf("buffer %+v %v\n", buffer, buffer.refs)
 
 	copy1 := buffer.Clone()
 	fmt.Printf("copy1 %+v %v\n", copy1, *copy1.refs)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -8,18 +9,45 @@ import (
 )
 
 func Map(data []int, action func(int) int) []int {
-	// need to implement
-	return nil
+	if data == nil {
+		return nil
+	}
+
+	result := make([]int, 0, cap(data))
+
+	for i := range data {
+		result = append(result, action(data[i]))
+	}
+
+	return result
 }
 
 func Filter(data []int, action func(int) bool) []int {
-	// need to implement
-	return nil
+	if data == nil {
+		return nil
+	}
+
+	result := make([]int, 0, cap(data))
+
+	for i := range data {
+		if action(data[i]) {
+			result = append(result, data[i])
+		}
+	}
+
+	fmt.Printf("FILTER data %v result %v\n", data, result)
+
+	return result
 }
 
 func Reduce(data []int, initial int, action func(int, int) int) int {
-	// need to implement
-	return 0
+	for i := range data {
+		initial = action(initial, data[i])
+	}
+
+	fmt.Printf("REDUCE data %v initial %v\n", data, initial)
+
+	return initial
 }
 
 func TestMap(t *testing.T) {
@@ -59,6 +87,8 @@ func TestMap(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			result := Map(test.data, test.action)
+			fmt.Printf("TEST MAP %v %v %+v %+v\n", name, test.data, test.result, result)
+
 			assert.True(t, reflect.DeepEqual(test.result, result))
 		})
 	}
@@ -101,6 +131,7 @@ func TestFilter(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			result := Filter(test.data, test.action)
+			fmt.Printf("TEST FILTER %v %v %v %v\n", name, test.data, test.result, result)
 			assert.True(t, reflect.DeepEqual(test.result, result))
 		})
 	}
@@ -144,6 +175,7 @@ func TestReduce(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			result := Reduce(test.data, test.initial, test.action)
+			fmt.Printf("TEST REDUCE %v %v %v\n", name, test.data, result)
 			assert.Equal(t, test.result, result)
 		})
 	}

@@ -202,6 +202,11 @@ func (p *GamePerson) Type() int {
 }
 
 func TestGamePerson(t *testing.T) {
+	fmt.Printf("Offset of name: %d\n", unsafe.Offsetof(GamePerson{}.name))
+	fmt.Printf("Align of name: %d\n", unsafe.Alignof(GamePerson{}.name))
+	fmt.Printf("Size: %d\n", unsafe.Sizeof(GamePerson{}))
+	fmt.Printf("Align of person: %d\n", unsafe.Alignof(GamePerson{}))
+
 	assert.LessOrEqual(t, unsafe.Sizeof(GamePerson{}), uintptr(64))
 
 	const x, y, z = math.MinInt32, math.MaxInt32, 0
@@ -231,7 +236,6 @@ func TestGamePerson(t *testing.T) {
 	}
 
 	person := NewGamePerson(options...)
-	fmt.Printf("SIZE %d\n", unsafe.Sizeof(person))
 	fmt.Printf("%+v\n", person)
 	assert.Equal(t, name, person.Name())
 	assert.Equal(t, x, person.X())

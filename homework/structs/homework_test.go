@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"unsafe"
@@ -10,81 +11,107 @@ import (
 
 type Option func(*GamePerson)
 
+const (
+	maskHasGun    uint32 = 0x0001 // 0000 0000 0000 0000 0000 0000 0000 0001
+	maskHasHouse  uint32 = 0x0002 // 0000 0000 0000 0000 0000 0000 0000 0010
+	maskHasFamily uint32 = 0x0004 // 0000 0000 0000 0000 0000 0000 0000 0100
+
+	maskGamePersonType  uint32 = 0x0018 // 0000 0000 0000 0000 0000 0000 0001 1000
+	shiftGamePersonType        = 3
+
+	maskManaHealth uint32 = 0x03FF // 0000 0000 0000 0000 0000 0011 1111 1111
+	shiftHealth           = 5
+	shiftMana             = 15
+
+	maskLevel    uint16 = 0x000F // 0000 0000 0000 1111
+	maskExp      uint16 = 0x00F0 // 0000 0000 1111 0000
+	maskStrength uint16 = 0x0F00 // 0000 1111 0000 0000
+	maskRespect  uint16 = 0xF000 // 1111 0000 0000 0000
+
+	shiftLevel    = 0
+	shiftExp      = 4
+	shiftStrength = 8
+	shiftRespect  = 12
+)
+
 func WithName(name string) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		copy(person.name[:], name)
 	}
 }
 
 func WithCoordinates(x, y, z int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.x = int32(x)
+		person.y = int32(y)
+		person.z = int32(z)
 	}
 }
 
 func WithGold(gold int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.gold = uint32(gold)
 	}
 }
 
 func WithMana(mana int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.manaHealthFlags = (person.manaHealthFlags & ^maskManaHealth) | (uint32(mana) << shiftMana)
 	}
 }
 
 func WithHealth(health int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.manaHealthFlags = (person.manaHealthFlags & ^maskManaHealth) | (uint32(health) << shiftHealth)
 	}
 }
 
 func WithRespect(respect int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.packedStats = (person.packedStats & ^maskRespect) | (uint16(respect) << shiftRespect)
 	}
 }
 
 func WithStrength(strength int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.packedStats = (person.packedStats & ^maskStrength) | (uint16(strength) << shiftStrength)
 	}
 }
 
 func WithExperience(experience int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.packedStats = (person.packedStats & ^maskExp) | (uint16(experience) << shiftExp)
 	}
 }
 
 func WithLevel(level int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.packedStats = (person.packedStats & ^maskLevel) | (uint16(level) << shiftLevel)
+
 	}
 }
 
 func WithHouse() func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.manaHealthFlags |= maskHasHouse
 	}
 }
 
 func WithGun() func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.manaHealthFlags |= maskHasGun
 	}
 }
 
 func WithFamily() func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.manaHealthFlags |= maskHasFamily
 	}
 }
 
 func WithType(personType int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		// need to implement
+		person.manaHealthFlags = (person.manaHealthFlags & ^maskGamePersonType) | (uint32(personType) << shiftGamePersonType)
 	}
 }
 
@@ -95,87 +122,83 @@ const (
 )
 
 type GamePerson struct {
-	// need to implement
+	x    int32  // 4 byte
+	y    int32  // 4 byte
+	z    int32  // 4 byte
+	gold uint32 // 0..2_000_000 = 21 bites // 11 free bites // 4 byte
+
+	manaHealthFlags uint32 // 7 free bites, mana (0..1000 = 10 bites), health (0..1000 = 10 bites), type (0..2 = 2 bites), family (0..1 = 1 bite), house (0..1 = 1 bite), gun (0..1 = 1 bite)
+	packedStats     uint16 // 0 free bites, respect (0..10 = 4 bites), strength (0..10 = 4 bites), experience (0..10 = 4 bites), level (0..10 = 4 bites)
+
+	name [42]byte
 }
 
 func NewGamePerson(options ...Option) GamePerson {
-	// need to implement
-	return GamePerson{}
+	var person GamePerson
+	for _, option := range options {
+		option(&person)
+	}
+	return person
 }
 
 func (p *GamePerson) Name() string {
-	// need to implement
-	return ""
+	return string(p.name[:])
 }
 
 func (p *GamePerson) X() int {
-	// need to implement
-	return 0
+	return int(p.x)
 }
 
 func (p *GamePerson) Y() int {
-	// need to implement
-	return 0
+	return int(p.y)
 }
 
 func (p *GamePerson) Z() int {
-	// need to implement
-	return 0
+	return int(p.z)
 }
 
 func (p *GamePerson) Gold() int {
-	// need to implement
-	return 0
+	return int(p.gold)
 }
 
 func (p *GamePerson) Mana() int {
-	// need to implement
-	return 0
+	return int((p.manaHealthFlags >> shiftMana) & 0x03FF)
 }
 
 func (p *GamePerson) Health() int {
-	// need to implement
-	return 0
+	return int((p.manaHealthFlags >> shiftHealth) & 0x03FF)
 }
 
 func (p *GamePerson) Respect() int {
-	// need to implement
-	return 0
+	return int((p.packedStats >> shiftRespect) & 0x0F)
 }
 
 func (p *GamePerson) Strength() int {
-	// need to implement
-	return 0
+	return int((p.packedStats >> shiftStrength) & 0x0F)
 }
 
 func (p *GamePerson) Experience() int {
-	// need to implement
-	return 0
+	return int((p.packedStats >> shiftExp) & 0x0F)
 }
 
 func (p *GamePerson) Level() int {
-	// need to implement
-	return 0
+	return int((p.packedStats >> shiftLevel) & 0x0F)
 }
 
 func (p *GamePerson) HasHouse() bool {
-	// need to implement
-	return false
+	return uint32(p.manaHealthFlags)&(maskHasHouse) != 0
 }
 
 func (p *GamePerson) HasGun() bool {
-	// need to implement
-	return false
+	return uint32(p.manaHealthFlags)&(maskHasGun) != 0
 }
 
 func (p *GamePerson) HasFamilty() bool {
-	// need to implement
-	return false
+	return uint32(p.manaHealthFlags)&(maskHasFamily) != 0
 }
 
 func (p *GamePerson) Type() int {
-	// need to implement
-	return 0
+	return int(((p.manaHealthFlags) >> shiftGamePersonType) & uint32(24))
 }
 
 func TestGamePerson(t *testing.T) {
@@ -208,6 +231,8 @@ func TestGamePerson(t *testing.T) {
 	}
 
 	person := NewGamePerson(options...)
+	fmt.Printf("SIZE %d\n", unsafe.Sizeof(person))
+	fmt.Printf("%+v\n", person)
 	assert.Equal(t, name, person.Name())
 	assert.Equal(t, x, person.X())
 	assert.Equal(t, y, person.Y())

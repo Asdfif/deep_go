@@ -18,9 +18,14 @@ type Person struct {
 	Married bool   `properties:"married"`
 }
 
-func Serialize(person Person) string {
-	tPerson := reflect.TypeOf(person)
+func Serialize[T any](person T) string {
 	vPerson := reflect.ValueOf(person)
+
+	if vPerson.Kind() != reflect.Struct {
+		return ""
+	}
+
+	tPerson := reflect.TypeOf(person)
 	fieldsCount := tPerson.NumField()
 
 	var result []string
@@ -42,10 +47,8 @@ func Serialize(person Person) string {
 			if vField.IsZero() {
 				continue
 			}
-
 			serializedName, _ = strings.CutSuffix(serializedName, ",omitempty")
 		}
-
 		result = append(result, fmt.Sprintf("%v=%v", serializedName, vField))
 	}
 

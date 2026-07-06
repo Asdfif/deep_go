@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"unsafe"
@@ -11,8 +12,45 @@ import (
 // go test -v homework_test.go
 
 func Trace(stacks [][]uintptr) []uintptr {
-	// need to implement
-	return nil
+	traced := make(map[uintptr]struct{})
+
+	for i, stack := range stacks {
+		for j := range stack {
+			ptr := stacks[i][j]
+			if ptr != 0 {
+				traced[ptr] = struct{}{}
+			}
+		}
+	}
+
+	pointers := []uintptr{}
+
+	var scan func(pointer uintptr)
+	scan = func(pointer uintptr) {
+		nextPointer := *(*uintptr)(unsafe.Pointer(pointer))
+		if nextPointer != 0 {
+			fmt.Printf("NEXT PTR %v\n", nextPointer)
+			if _, ok := traced[nextPointer]; ok {
+				return
+			}
+			pointers = append(pointers, nextPointer)
+			traced[nextPointer] = struct{}{}
+			scan(nextPointer)
+		}
+	}
+
+	for i, stack := range stacks {
+		for j := range stack {
+			ptr := stacks[i][j]
+			if ptr != 0 {
+				fmt.Printf("SCANNED %v\n", ptr)
+				pointers = append(pointers, ptr)
+				scan(ptr)
+			}
+		}
+	}
+
+	return pointers
 }
 
 func TestTrace(t *testing.T) {
@@ -57,6 +95,9 @@ func TestTrace(t *testing.T) {
 		uintptr(unsafe.Pointer(&heapPointer3)),
 		uintptr(unsafe.Pointer(&heapObjects[3])),
 	}
+	fmt.Printf("STACKS %v\n", stacks)
+	fmt.Printf("EXPECTED %v\n", expectedPointers)
+	fmt.Printf("ACTUAL %v\n", pointers)
 
 	assert.True(t, reflect.DeepEqual(expectedPointers, pointers))
 }
